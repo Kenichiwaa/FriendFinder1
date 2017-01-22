@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+      <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+
+      <title>Airplane Friend Finder</title>
+  <!--Google Icon Font CDN-->
+      <link href="http://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <!-- jQuery CDN -->
+      <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+  <!-- Bootsstrap CDN -->
+      <!-- Latest compiled and minified CSS -->
+      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <!-- Materialze CDN's -->
+      <!-- Compiled and minified CSS -->
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.8/css/materialize.min.css">
+      <!-- Compiled and minified JavaScript -->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.8/js/materialize.min.js"></script>
+  </head>
+  <style>
+  .jumbotron {
+    background-image: url("http://il2.picdn.net/shutterstock/videos/22208248/thumb/1.jpg");
+  }
+  </style>
+
+<body>
+<!-- ======================================================================= -->
+<!-- Top Spanning Header -->
+<div class="jumbotron">
+    <h1 class="text-center"></span>Airplane Friend Finder</h1>
+  <hr /><br />
+    <div class="text-center">
+        <a href="/tables"><button type="button" class="btn btn-lg btn-primary"><span class="glyphicon glyphicon-list-alt"></span> View Potential Friends</button></a>
+    </div>
+</div>
+
+<!-- ======================================================================= -->
+<div class="container">
+<!-- Name and Photo Input Fields  -->
+    <div class="row">
+      <form class="col s12">
+          <div class="input-field col s6">
+            <i class="material-icons prefix">account_circle</i>
+            <input type="text" class="form-control validate" id="userName">
+            <label for="icon_prefix">Name (required)</label>
+          </div>
+
+          <div class="input-field col s6">
+            <i class="material-icons prefix">perm_media</i>
+            <input type="text" class="form-control validate" id="userPhoto">
+            <label for="icon_prefix">Profile Photo URL (required)</label>
+          </div>
+      </form>
+    </div>
+
+<!-- ======================================================================= -->
+<!-- Questions Displayed Here-->
+    <div class="row">
+      <form>
+        <div id="questionContainer">
+        </div>
+        <!-- Send Button -->
+  <br /><br />
+        <button class="btn waves-effect waves-light submit" href="#modal1" type="submit" name="action">Submit
+          <i class="material-icons right">send</i>
+        </button>
+      </form>
+    </div>
+
+</div>
+<br /><br />
+<!-- ======================================================================= -->
+<footer class="footer">
+    <div class="container">
+        <p>
+          <a href="/api/tables">API Table Link</a> | <a href="/api/waitlist">API waitlist</a> | <a href="#">Github Repo</a>
+        </p>
+    </div>
+</footer>
+
+</div>
+<!-- ======================================================================= -->
+<!-- ===================Starting javascript================================= -->
+<!-- ======================================================================= -->
+<script type="text/javascript">
+
+
+
+
+
+var profile; // once the user submits form, data will live here
+// =============================================
+// =============Build Questions=================
+// =============================================
+var questions = [
+  "I love roller coasters",
+  "Smooth is nice",
+  "Luxury is a must",
+  "Bombs over Baghdad!",
+  "Wind is my spirit",
+  "Gasoline is the best smell!",
+  "The more engine's the better!",
+  "USA",
+  "USSR",
+  "French/British"
+
+];
+
+var ratings = [
+  "Strongly Disagree",
+  "Disagree",
+  "Neutral",
+  "Agree",
+  "Strongly Agree"
+];
+
+
+
+var questionCount = 0; // number of questions
+var name = $('#userName').val().trim();
+var photoURL = $('#userPhoto').val().trim();
+var arrayUser;
+// var arrayUser = [2,4,1,4,3,7,6,4,7,9];
+var sumArray = [];
+var lowestNumIndex;
+var bestFriend;
+// grab scores from users in database and places them in an array
+var friendsScoresArray = [];
+
+// Create radio buttons for Questions
+function createRadioButtons(){
+  var buttonCount = 0;
+  var radioButtons = $('<section>');
+  for(var m=0; m<ratings.length; m++) {
+    buttonCount++;
+    radioButtons.append('<p><input name="group' + questionCount + '"type="radio" value="' + buttonCount + '" class="answers" id="q' + questionCount + 'a' + buttonCount + '"/><label for="q' + questionCount + 'a' + buttonCount + '">' + ratings[m] + '</label></p>');
+  };
+  return radioButtons;
+}
+
+// Create Quesitons
+function displayQuestions(){
+  for(var i=0; i<questions.length; i++){
+    questionCount++;
+    var question = $('<section>');
+    question.append('<h5>' + questionCount + '. ' + questions[i] + '</h5>');
+    question.append(createRadioButtons());
+    $('#questionContainer').append(question);
+  };
+  console.log("Question Count: " + questionCount);
+}
+
+// Grab user data when user clicks submit
+$(".submit").on("click", function(event) {
+  event.preventDefault();
+  var results = [];
+    for(var i=1; i<questionCount; i++) { // use a loop to see which radio button is checked per question
+    results.push($("input[name=group" + i + "]:checked").val());
+  };
+  //Build user profile
+  profile = {
+    name: $('#userName').val().trim(),
+    photoURL: $('#userPhoto').val().trim(),
+    scores: results
+  };
+  console.log(profile);
+  arrayUser = results;
+  friendsScores(arrayUser);
+});
+
+// =============================================
+// =============Compare Scores==================
+//==============================================
+
+
+
+var friendsScores = function(arrayUser) {
+  var currentURL = window.location.origin;
+  // The AJAX function uses the URL of our API to GET the data associated with it (initially set to localhost)
+  $.ajax({ url: currentURL + "/api/friends", method: "GET" }) //get Scores
+  .done(function(friends) {
+    // Loop through and display each of the friends scores. Place in arrray
+    for (var i = 0; i < friends.length; i++) {
+      friendsScoresArray.push(friends[i].scores);
+    };
+    findMatch(arrayUser, friendsScoresArray);
+  });
+}
+
+var findMatch = function(arrayUser, friendsScoresArray) {
+  // Loop through that array and compare scores with current users score.
+  for(var i=0; i< friendsScoresArray.length; i++) {
+    compareUserRatings(arrayUser, friendsScoresArray[i]);
+  }
+  lowestNumIndex = sumArray.indexOf(Math.min.apply(Math, sumArray)); //find indexOf lowest number
+  var currentURL = window.location.origin;
+  console.log('lowestNumIndex :'+lowestNumIndex);
+  $.ajax({ url: currentURL + "/api/friends", method: "GET" })
+  .done(function(friends) {
+    bestFriend = friends[lowestNumIndex];
+    console.log("name: "+bestFriend.name);
+    console.log("photo: "+bestFriend.photo);
+    console.log("scores: "+bestFriend.scores);
+    displayFriend();
+  });
+
+}
+
+var displayFriend = function (){
+  var modal = $("<div>");
+  modal.id = 'modal1';
+  modal.addClass("modal, modal-fixed-footer");
+  var modalGuts = $("<div>");
+  modalGuts.addClass("modal-content");
+  modalGuts.append("<h4>"+ bestFriend.name +"</h4>");
+  modalGuts.append('<img src="'+ bestFriend.photo +'" alt="Best Friends Photo">');
+  $('body').append(modal);
+  $('body').append(modalGuts);
+};
+
+
+
+// <!-- Modal Trigger -->
+// <a class="modal-trigger waves-effect waves-light btn" href="#modal1">Modal</a>
+//
+// <!-- Modal Structure -->
+// <div id="modal1" class="modal modal-fixed-footer">
+//   <div class="modal-content">
+//     <h4>Modal Header</h4>
+//     <p>A bunch of text</p>
+//   </div>
+//   <div class="modal-footer">
+//     <a href="#!" class="modal-action modal-close waves-effect waves-green btn-flat ">Agree</a>
+//   </div>
+// </div>
+//
+
+
+// TODO List
+// Send users profile to database.
+// Loop through and compare user scores with database user scores.
+// Display comparison with the lowest maching score number.
+
+var compareUserRatings = function(userArray, arrayPotentialFriend) {
+  var compatability = [];
+  var array1 = userArray;
+  var array2 = arrayPotentialFriend;
+  //console.log("Users Array: "+userArray);
+  //console.log("potential friend's array : "+arrayPotentialFriend);
+
+  // run thru array1 && array2
+  for(var i=0; i < array1.length && i < array2.length; i++) {
+    var sum = array1[i] - array2[i]; // subtract
+    compatability.push(Math.abs(sum)); // push new array and turn negative numbers to positive numb array
+  }
+  // add new array of numbers together for a total
+  var sum = compatability.reduce(function(a, b) {
+    return a + b;
+  }, 0);
+  //console.log('Sum: '+sum);
+  sumArray.push(sum);
+  //console.log('SumArray: '+sumArray);
+};
+
+
+// ===========================================
+displayQuestions();
+
+</script>
+
+</body>
+</html>
